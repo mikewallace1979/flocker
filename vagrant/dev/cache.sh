@@ -8,6 +8,7 @@ set -e
 systemctl start docker
 docker pull busybox
 docker pull openshift/busybox-http-app
+docker pull python:2.7-slim
 
 # Download python wheels
 mkdir /var/cache/wheelhouse
