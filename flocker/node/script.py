@@ -37,6 +37,7 @@ __all__ = [
     "flocker_changestate_main",
     "flocker_reportstate_main",
     "flocker_zfs_agent_main",
+    "flocker_dataset_agent_main",
 ]
 
 
