@@ -272,12 +272,31 @@ def flocker_zfs_agent_main():
 
 
 class DatasetAgentOptions(Options):
-    # optParameters = [
-    #     ("hostname", "H", None, "This node's hostname."),
-    #     ("destination-host", None, None, "Control service address."),
-    #     ("destination-port", None, None, "Control service address.", int),
-    # ]
-    pass
+    """
+    Command line options for ``flocker-dataset-agent``.
+
+    XXX: This is a hack. Better to have required options and to share the
+    common options with ``ZFSAgentOptions``.
+    """
+    longdesc = """\
+    flocker-dataset-agent runs a dataset convergence agent on a node.
+    """
+
+    synopsis = (
+        "Usage: flocker-dataset-agent [OPTIONS] <local-hostname> "
+        "<control-service-hostname>")
+
+    optParameters = [
+        ["destination-port", "p", 4524,
+         "The port on the control service to connect to.", int],
+    ]
+
+    def parseArgs(self, hostname, host):
+        # Passing in the 'hostname' (really node identity) via command
+        # line is a hack.  See
+        # https://clusterhq.atlassian.net/browse/FLOC-1381 for solution.
+        self["hostname"] = unicode(hostname, "ascii")
+        self["destination-host"] = unicode(host, "ascii")
 
 
 class DatasetAgentScript(object):
