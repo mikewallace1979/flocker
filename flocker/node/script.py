@@ -8,13 +8,14 @@ tools.
 
 import sys
 
-from twisted.python.usage import Options, UsageError
-
-
 from yaml import safe_load, safe_dump
 from yaml.error import YAMLError
 
+from characteristic import attributes
+
 from zope.interface import implementer
+
+from twisted.python.usage import Options, UsageError
 
 from ..control._config import (
     FlockerConfiguration, marshal_configuration,
@@ -25,6 +26,7 @@ from ..volume.service import (
 
 from ..volume.script import flocker_volume_options
 from ..common.script import (
+    ICommandLineScript,
     flocker_standard_options, FlockerScriptRunner, main_for_service)
 from ..control import (
     ConfigurationError, current_from_configuration, model_from_configuration,
@@ -299,8 +301,24 @@ class DatasetAgentOptions(Options):
         self["destination-host"] = unicode(host, "ascii")
 
 
+@implementer(ICommandLineScript)
+@attributes(["deployer_factory"])
 class DatasetAgentScript(object):
-    pass
+    """
+    Implement top-level logic for the ``flocker-dataset-agent`` script.
+
+    :ivar deployer_factory: A one-argument callable to create an ``IDeployer``
+        provider for this script.
+
+    :ivar service: The ``AgentLoopService`` that is created and started by
+        ``main``.
+    """
+    def main(self, reactor, options):
+        self.service = AgentLoopService(
+            reactor=reactor, deployer=self.deployer_factory(None),
+            host=options["destination-host"], port=options["destination-port"],
+        )
+        return main_for_service(reactor, self.service)
 
 
 def flocker_dataset_agent_main():

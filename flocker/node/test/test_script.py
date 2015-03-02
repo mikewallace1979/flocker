@@ -7,19 +7,22 @@ Tests for :module:`flocker.node.script`.
 from StringIO import StringIO
 
 from pyrsistent import pmap
+from yaml import safe_dump, safe_load
+
+from zope.interface.verify import verifyObject
 
 from twisted.trial.unittest import SynchronousTestCase
 from twisted.python.usage import UsageError
 from twisted.python.filepath import FilePath
 from twisted.application.service import Service
 
-from yaml import safe_dump, safe_load
 from ...testtools import StandardOptionsTestsMixin, MemoryCoreReactor
 from ...volume.testtools import make_volume_options_tests
 from ...route import make_memory_network
+from ...common.script import ICommandLineScript
 
 from ..script import (
-    ZFSAgentOptions, ZFSAgentScript,
+    ZFSAgentOptions, ZFSAgentScript, DatasetAgentScript,
     ChangeStateOptions, ChangeStateScript,
     ReportStateOptions, ReportStateScript, DatasetAgentOptions)
 from .. import script as script_module
@@ -456,6 +459,41 @@ class ZFSAgentScriptTests(SynchronousTestCase):
                                            port=1234),
                           P2PNodeDeployer, b"1.2.3.4", service, True))
 
+
+class DatasetAgentScriptTests(SynchronousTestCase):
+    def test_interface(self):
+        """
+        ``DatasetAgentScript`` instances provide ``ICommandLineScript``.
+        """
+        self.assertTrue(
+            verifyObject(
+                ICommandLineScript,
+                DatasetAgentScript(deployer_factory=lambda hostname: None)
+            )
+        )
+
+    def test_agent_loop_service(self):
+        """
+        ``DatasetAgentScript.main`` creates ``AgentLoopService`` configured with
+        the destination given by the options.
+        """
+        deployer = object()
+        reactor = MemoryCoreReactor()
+        options = DatasetAgentOptions()
+        options.parseOptions([
+            b"--destination-port", b"1234", b"10.0.0.1", b"10.0.0.2",
+        ])
+        agent = DatasetAgentScript(deployer_factory=lambda hostname: deployer)
+        agent.main(reactor, options)
+        self.assertEqual(
+            AgentLoopService(
+                reactor=reactor,
+                deployer=deployer,
+                host=b"10.0.0.2",
+                port=1234,
+            ),
+            agent.service
+        )
 
 def make_amp_agent_options_tests(options_type):
     """
