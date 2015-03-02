@@ -315,7 +315,8 @@ class DatasetAgentScript(object):
     """
     def main(self, reactor, options):
         self.service = AgentLoopService(
-            reactor=reactor, deployer=self.deployer_factory(None),
+            reactor=reactor,
+            deployer=self.deployer_factory(options["hostname"]),
             host=options["destination-host"], port=options["destination-port"],
         )
         return main_for_service(reactor, self.service)

@@ -495,6 +495,24 @@ class DatasetAgentScriptTests(SynchronousTestCase):
             agent.service
         )
 
+    def test_deployer_factory_called_with_hostname(self):
+        """
+        ``DatasetAgentScript.main`` calls its ``deployer_factory`` with the
+        hostname given by the options.
+        """
+        spied = []
+        def deployer_factory(hostname):
+            spied.append(hostname)
+            return object()
+
+        reactor = MemoryCoreReactor()
+        options = DatasetAgentOptions()
+        options.parseOptions([b"10.0.0.1", b"10.0.0.2"])
+        agent = DatasetAgentScript(deployer_factory=deployer_factory)
+        agent.main(reactor, options)
+        self.assertEqual([b"10.0.0.1"], spied)
+
+
 def make_amp_agent_options_tests(options_type):
     """
     """
