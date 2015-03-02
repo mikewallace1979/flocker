@@ -1,5 +1,5 @@
 # Copyright Hybrid Logic Ltd.  See LICENSE file for details.
-# -*- test-case-name: flocker.node.test.test_script -*-
+# -*- test-case-name: flocker.node.test.test_script,flocker.node.functional.test_script -*-
 
 """
 The command-line ``flocker-changestate`` and ``flocker-reportstate``
@@ -266,4 +266,25 @@ def flocker_zfs_agent_main():
     return FlockerScriptRunner(
         script=VolumeScript(ZFSAgentScript()),
         options=ZFSAgentOptions()
+    ).main()
+
+
+
+class DatasetAgentOptions(Options):
+    # optParameters = [
+    #     ("hostname", "H", None, "This node's hostname."),
+    #     ("destination-host", None, None, "Control service address."),
+    #     ("destination-port", None, None, "Control service address.", int),
+    # ]
+    pass
+
+
+class DatasetAgentScript(object):
+    pass
+
+
+def flocker_dataset_agent_main():
+    return FlockerScriptRunner(
+        script=DatasetAgentScript(),
+        options=DatasetAgentOptions()
     ).main()
