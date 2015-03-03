@@ -48,7 +48,7 @@ class IBlockDeviceAPITestsMixin(object):
         ``create_volume`` returns a ``BlockVolume`` that is returned by
         ``list_volumes``.
         """
-        new_volume = self.api.create_volume()
+        new_volume = self.api.create_volume(size=1000)
         self.assertIn(new_volume, self.api.list_volumes())
 
 
@@ -88,10 +88,14 @@ class LoopbackBlockDeviceAPIImplementationTests(SynchronousTestCase):
         ``list_volumes`` returns a ``BlockVolume`` for each unattached volume
         file.
         """
+        expected_size = 1234
         api = loopbackblockdeviceapi_for_test(test_case=self)
-        blockdevice_volume = BlockDeviceVolume(blockdevice_id=bytes(uuid4()))
+        blockdevice_volume = BlockDeviceVolume(
+            blockdevice_id=bytes(uuid4()),
+            size=expected_size
+        )
         (api
          .root_path.child('unattached')
          .child(blockdevice_volume.blockdevice_id)
-         .setContent(b'x'))
+         .setContent(b'x' * expected_size))
         self.assertEqual([blockdevice_volume], api.list_volumes())

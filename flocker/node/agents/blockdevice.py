@@ -20,7 +20,7 @@ class IBlockDeviceAPI(Interface):
     """
     """
 
-    def create_volume():
+    def create_volume(size):
         """
         """
 
@@ -32,7 +32,7 @@ class IBlockDeviceAPI(Interface):
         """
         """
 
-@attributes(['blockdevice_id'])
+@attributes(['blockdevice_id', 'size'])
 class BlockDeviceVolume(object):
     """
     """
@@ -59,15 +59,18 @@ class LoopbackBlockDeviceAPI(object):
         self._unattached_directory = self.root_path.child('unattached')
         self._unattached_directory.makedirs()
 
-    def create_volume(self):
+    def create_volume(self, size):
         """
         * create a file of some size (maybe size is required parameter)
         * put it in the IaaS's "unattached" directory
         """
         volume = BlockDeviceVolume(
-            blockdevice_id=bytes(uuid4()).encode('ascii')
+            blockdevice_id=bytes(uuid4()).encode('ascii'),
+            size=size
         )
-        self._unattached_directory.child(volume.blockdevice_id).setContent(b'')
+        self._unattached_directory.child(
+            volume.blockdevice_id
+        ).setContent(b'\0' * volume.size)
         return volume
 
     def attach_volume(self):
@@ -82,7 +85,9 @@ class LoopbackBlockDeviceAPI(object):
         volumes = []
         for child in self.root_path.child('unattached').children():
             volume = BlockDeviceVolume(
-                blockdevice_id=child.basename().decode('ascii'))
+                blockdevice_id=child.basename().decode('ascii'),
+                size=child.getsize(),
+            )
             volumes.append(volume)
         return volumes
 
