@@ -14,3 +14,12 @@ from .. import IDeployer
 class BlockDeviceDeployer(object):
     """
     """
+    def discover_local_state(self):
+        """
+        """
+
+    def calculate_necessary_state_changes(self, local_state,
+                                          desired_configuration,
+                                          current_cluster_state):
+        """
+        """
