@@ -10,6 +10,8 @@ from zope.interface import implementer, Interface
 
 from characteristic import attributes
 
+from twisted.python.filepath import FilePath
+
 from .. import IDeployer
 
 
@@ -40,6 +42,20 @@ class BlockDeviceVolume(object):
 class LoopbackBlockDeviceAPI(object):
     """
     """
+    @classmethod
+    def from_path(cls, root_path):
+        """
+        """
+        api = cls(root_path=FilePath(root_path))
+        api._initialise_directories()
+        return api
+
+    def _initialise_directories(self):
+        """
+        """
+        unattached_directory = self.root_path.child('unattached')
+        unattached_directory.makedirs()
+
     def create_volume(self):
         """
         * create a file of some size (maybe size is required parameter)
@@ -55,7 +71,12 @@ class LoopbackBlockDeviceAPI(object):
         """
         * list all files in "unattached" directory and all per-host directories
         """
-        return []
+        volumes = []
+        for child in self.root_path.child('unattached').children():
+            volume = BlockDeviceVolume(
+                blockdevice_id=child.basename().decode('ascii'))
+            volumes.append(volume)
+        return volumes
 
 
 @implementer(IDeployer)

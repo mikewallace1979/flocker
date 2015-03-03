@@ -12,7 +12,6 @@ from ..blockdevice import (
 
 from ..._deploy import IDeployer
 
-from twisted.python.filepath import FilePath
 from twisted.trial.unittest import SynchronousTestCase
 
 
@@ -61,8 +60,8 @@ def make_iblockdeviceapi_tests(blockdevice_api_factory):
 def loopbackblockdeviceapi_for_test(test_case):
     """
     """
-    root_path = FilePath(test_case.mktemp())
-    return LoopbackBlockDeviceAPI(root_path=root_path)
+    root_path = test_case.mktemp()
+    return LoopbackBlockDeviceAPI.from_path(root_path=root_path)
 
 
 class LoopbackBlockDeviceAPITests(
@@ -77,15 +76,15 @@ class LoopbackBlockDeviceAPIImplementationTests(SynchronousTestCase):
     """
     Implementation specific tests for ``LoopbackBlockDeviceAPI``.
     """
-    def test_list_volume_in(self):
+    def test_list_unattached_volumes(self):
         """
-        ``list_volumes`` returns an empty ``list`` if no block devices have
-        been created.
+        ``list_volumes`` returns a ``BlockVolume`` for each unattached volume
+        file.
         """
         api = loopbackblockdeviceapi_for_test(test_case=self)
         blockdevice_volume = BlockDeviceVolume(blockdevice_id=bytes(uuid4()))
-        unattached_directory = api.root_path.child('unattached')
-        unattached_directory.makedirs()
-        unattached_volume_file = unattached_directory.child(blockdevice_volume.blockdevice_id)
-        unattached_volume_file.setContent(b'x')
+        (api
+         .root_path.child('unattached')
+         .child(blockdevice_volume.blockdevice_id)
+         .setContent(b'x'))
         self.assertEqual([blockdevice_volume], api.list_volumes())
