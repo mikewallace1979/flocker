@@ -47,6 +47,7 @@ class LoopbackBlockDeviceAPI(object):
         """
         * list all files in "unattached" directory and all per-host directories
         """
+        return []
 
 
 @implementer(IDeployer)

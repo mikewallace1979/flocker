@@ -32,14 +32,17 @@ class IBlockDeviceAPITestsMixin(object):
             verifyObject(IBlockDeviceAPI, self.api)
         )
 
-    def test_list_volume(self):
+    def test_list_volume_empty(self):
         """
-        ``create_volume``
+        ``list_volumes`` returns an empty ``list`` if no block devices have
+        been created.
         """
+        self.assertEqual([], self.api.list_volumes())
 
 
 def make_iblockdeviceapi_tests(blockdevice_api_type):
-
+    """
+    """
     class Tests(IBlockDeviceAPITestsMixin, SynchronousTestCase):
         """
         """
