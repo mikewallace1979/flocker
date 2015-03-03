@@ -7,7 +7,7 @@ from zope.interface.verify import verifyObject
 
 from ..blockdevice import (
     BlockDeviceDeployer, LoopbackBlockDeviceAPI, IBlockDeviceAPI,
-    BlockDeviceVolume
+    BlockDeviceVolume, UnknownVolume, AlreadyAttachedVolume,
 )
 
 from ..._deploy import IDeployer
@@ -51,10 +51,68 @@ class IBlockDeviceAPITestsMixin(object):
         new_volume = self.api.create_volume(size=1000)
         self.assertIn(new_volume, self.api.list_volumes())
 
+    def test_attach_unknown_volume(self):
+        """
+        An attempt to attach an unknown ``BlockDeviceVolume`` raises
+        ``UnknownVolume``.
+        """
+        self.assertRaises(
+            UnknownVolume,
+            self.api.attach_volume,
+            blockdevice_id=bytes(uuid4()),
+            host=b'192.0.2.123'
+        )
+
+    def test_attach_attached_volume(self):
+        """
+        An attempt to attach an already attached ``BlockDeviceVolume`` raises
+        ``AlreadyAttachedVolume``.
+        A request to attach a volume which is already attached to the requested
+        host, also raises ``AlreadyAttachedVolume``.
+        """
+        new_volume = self.api.create_volume(size=1234)
+        attached_volume = self.api.attach_volume(new_volume.blockdevice_id, host=b'192.0.2.123')
+
+        self.assertRaises(
+            AlreadyAttachedVolume,
+            self.api.attach_volume,
+            blockdevice_id=attached_volume.blockdevice_id,
+            host=b'192.0.2.123'
+        )
+
     def test_attach_unattached_volume(self):
         """
         An unattached ``BlockDeviceVolume`` can be attached.
         """
+        expected_host = b'192.0.2.123'
+        new_volume = self.api.create_volume(size=1000)
+        expected_volume = BlockDeviceVolume(
+            blockdevice_id=new_volume.blockdevice_id,
+            size=new_volume.size,
+            host=expected_host,
+        )
+        attached_volume = self.api.attach_volume(
+            blockdevice_id=new_volume.blockdevice_id,
+            host=expected_host
+        )
+        self.assertEqual(expected_volume, attached_volume)
+
+    def test_attached_volume_listed(self):
+        """
+        An attached ``BlockDeviceVolume`` is listed.
+        """
+        expected_host = b'192.0.2.123'
+        new_volume = self.api.create_volume(size=1000)
+        expected_volume = BlockDeviceVolume(
+            blockdevice_id=new_volume.blockdevice_id,
+            size=new_volume.size,
+            host=expected_host,
+        )
+        self.api.attach_volume(
+            blockdevice_id=new_volume.blockdevice_id,
+            host=expected_host
+        )
+        self.assertEqual([expected_volume], self.api.list_volumes())
 
 
 def make_iblockdeviceapi_tests(blockdevice_api_factory):

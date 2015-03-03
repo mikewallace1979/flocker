@@ -9,11 +9,22 @@ from uuid import uuid4
 
 from zope.interface import implementer, Interface
 
-from characteristic import attributes, Attribute
+from characteristic import attributes
+from pyrsistent import PRecord, field
 
 from twisted.python.filepath import FilePath
 
 from .. import IDeployer
+
+
+class UnknownVolume(Exception):
+    """
+    """
+
+
+class AlreadyAttachedVolume(Exception):
+    """
+    """
 
 
 class IBlockDeviceAPI(Interface):
@@ -24,7 +35,7 @@ class IBlockDeviceAPI(Interface):
         """
         """
 
-    def attach_volume(blockdevice_id):
+    def attach_volume(blockdevice_id, host):
         """
         """
 
@@ -32,11 +43,12 @@ class IBlockDeviceAPI(Interface):
         """
         """
 
-@attributes(['blockdevice_id', 'size', Attribute('host', default_value=None)])
-class BlockDeviceVolume(object):
+class BlockDeviceVolume(PRecord):
     """
     """
-
+    blockdevice_id = field(type=bytes, mandatory=True)
+    size = field(type=int, mandatory=True)
+    host = field(type=(bytes, type(None)), initial=None)
 
 
 @implementer(IBlockDeviceAPI)
@@ -76,11 +88,22 @@ class LoopbackBlockDeviceAPI(object):
         ).setContent(b'\0' * volume.size)
         return volume
 
-    def attach_volume(self, blockdevice_id):
+    def attach_volume(self, blockdevice_id, host):
         """
         * move file into per-host (eg named after node ip) directory
         """
-
+        for volume in self.list_volumes():
+            if volume.host == host:
+                raise AlreadyAttachedVolume()
+            if volume.blockdevice_id == blockdevice_id:
+                attached_volume = volume.set(host=host)
+                f = self._unattached_directory.child(attached_volume.blockdevice_id)
+                host_directory = self._attached_directory.child(host)
+                host_directory.makedirs()
+                f.moveTo(host_directory.child(f.basename()))
+                return attached_volume
+        else:
+            raise UnknownVolume()
 
     def list_volumes(self):
         """
@@ -89,7 +112,7 @@ class LoopbackBlockDeviceAPI(object):
         volumes = []
         for child in self.root_path.child('unattached').children():
             volume = BlockDeviceVolume(
-                blockdevice_id=child.basename().decode('ascii'),
+                blockdevice_id=child.basename(),
                 size=child.getsize(),
             )
             volumes.append(volume)
@@ -99,7 +122,7 @@ class LoopbackBlockDeviceAPI(object):
             for child in host_directory.children():
 
                 volume = BlockDeviceVolume(
-                    blockdevice_id=child.basename().decode('ascii'),
+                    blockdevice_id=child.basename(),
                     size=child.getsize(),
                     host=host_name
                 )
