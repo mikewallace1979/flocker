@@ -15,10 +15,38 @@ class IBlockDeviceAPI(Interface):
     """
     """
 
+    def create_volume():
+        """
+        """
+
+    def attach_volume():
+        """
+        """
+
+    def list_volumes():
+        """
+        """
+
+
 @implementer(IBlockDeviceAPI)
 class LoopbackBlockDeviceAPI(object):
     """
     """
+    def create_volume(self):
+        """
+        * create a file of some size (maybe size is required parameter)
+        * put it in the IaaS's "unattached" directory
+        """
+
+    def attach_volume(self):
+        """
+        * move file into per-host (eg named after node ip) directory
+        """
+
+    def list_volumes(self):
+        """
+        * list all files in "unattached" directory and all per-host directories
+        """
 
 
 @implementer(IDeployer)
