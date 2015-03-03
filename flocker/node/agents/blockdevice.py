@@ -80,7 +80,7 @@ class LoopbackBlockDeviceAPI(object):
         * put it in the IaaS's "unattached" directory
         """
         volume = BlockDeviceVolume(
-            blockdevice_id=bytes(uuid4()).encode('ascii'),
+            blockdevice_id=bytes(uuid4()),
             size=size,
         )
         self._unattached_directory.child(
