@@ -21,13 +21,37 @@ class BlockDeviceDeployerTests(SynchronousTestCase):
         )
 
 
-class LoopbackBlockDeviceAPITests(SynchronousTestCase):
+class IBlockDeviceAPITestsMixin(object):
     """
     """
     def test_interface(self):
         """
-        ``LoopbackBlockDeviceAPI`` instances provide ``IBlockDeviceAPI``.
+        ``api`` instances provide ``IBlockDeviceAPI``.
         """
         self.assertTrue(
-            verifyObject(IBlockDeviceAPI, LoopbackBlockDeviceAPI())
+            verifyObject(IBlockDeviceAPI, self.api)
         )
+
+    def test_list_volume(self):
+        """
+        ``create_volume``
+        """
+
+
+def make_iblockdeviceapi_tests(blockdevice_api_type):
+
+    class Tests(IBlockDeviceAPITestsMixin, SynchronousTestCase):
+        """
+        """
+        def setUp(self):
+            self.api = blockdevice_api_type()
+
+    return Tests
+
+
+class LoopbackBlockDeviceAPITests(
+        make_iblockdeviceapi_tests(blockdevice_api_type=LoopbackBlockDeviceAPI)
+):
+    """
+    Tests for ``LoopbackBlockDeviceAPITests``.
+    """
