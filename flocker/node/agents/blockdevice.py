@@ -29,6 +29,11 @@ class IBlockDeviceAPI(Interface):
         """
         """
 
+@attributes(['blockdevice_id'])
+class BlockDeviceVolume(object):
+    """
+    """
+
 
 @implementer(IBlockDeviceAPI)
 @attributes(['root_path'])

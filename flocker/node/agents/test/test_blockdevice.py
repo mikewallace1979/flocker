@@ -1,10 +1,14 @@
 """
 Tests for ``flocker.node.agents.blockdevice``.
 """
+from uuid import uuid4
+
 from zope.interface.verify import verifyObject
 
 from ..blockdevice import (
-    BlockDeviceDeployer, LoopbackBlockDeviceAPI, IBlockDeviceAPI)
+    BlockDeviceDeployer, LoopbackBlockDeviceAPI, IBlockDeviceAPI,
+    BlockDeviceVolume
+)
 
 from ..._deploy import IDeployer
 
@@ -41,6 +45,7 @@ class IBlockDeviceAPITestsMixin(object):
         self.assertEqual([], self.api.list_volumes())
 
 
+
 def make_iblockdeviceapi_tests(blockdevice_api_factory):
     """
     """
@@ -64,5 +69,23 @@ class LoopbackBlockDeviceAPITests(
         make_iblockdeviceapi_tests(blockdevice_api_factory=loopbackblockdeviceapi_for_test)
 ):
     """
-    Tests for ``LoopbackBlockDeviceAPITests``.
+    Interface adherence Tests for ``LoopbackBlockDeviceAPI``.
     """
+
+
+class LoopbackBlockDeviceAPIImplementationTests(SynchronousTestCase):
+    """
+    Implementation specific tests for ``LoopbackBlockDeviceAPI``.
+    """
+    def test_list_volume_in(self):
+        """
+        ``list_volumes`` returns an empty ``list`` if no block devices have
+        been created.
+        """
+        api = loopbackblockdeviceapi_for_test(test_case=self)
+        blockdevice_volume = BlockDeviceVolume(blockdevice_id=bytes(uuid4()))
+        unattached_directory = api.root_path.child('unattached')
+        unattached_directory.makedirs()
+        unattached_volume_file = unattached_directory.child(blockdevice_volume.blockdevice_id)
+        unattached_volume_file.setContent(b'x')
+        self.assertEqual([blockdevice_volume], api.list_volumes())
