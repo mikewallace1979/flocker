@@ -8,6 +8,7 @@ from ..blockdevice import (
 
 from ..._deploy import IDeployer
 
+from twisted.python.filepath import FilePath
 from twisted.trial.unittest import SynchronousTestCase
 
 
@@ -40,20 +41,27 @@ class IBlockDeviceAPITestsMixin(object):
         self.assertEqual([], self.api.list_volumes())
 
 
-def make_iblockdeviceapi_tests(blockdevice_api_type):
+def make_iblockdeviceapi_tests(blockdevice_api_factory):
     """
     """
     class Tests(IBlockDeviceAPITestsMixin, SynchronousTestCase):
         """
         """
         def setUp(self):
-            self.api = blockdevice_api_type()
+            self.api = blockdevice_api_factory(test_case=self)
 
     return Tests
 
 
+def loopbackblockdeviceapi_for_test(test_case):
+    """
+    """
+    root_path = FilePath(test_case.mktemp())
+    return LoopbackBlockDeviceAPI(root_path=root_path)
+
+
 class LoopbackBlockDeviceAPITests(
-        make_iblockdeviceapi_tests(blockdevice_api_type=LoopbackBlockDeviceAPI)
+        make_iblockdeviceapi_tests(blockdevice_api_factory=loopbackblockdeviceapi_for_test)
 ):
     """
     Tests for ``LoopbackBlockDeviceAPITests``.

@@ -8,6 +8,8 @@ devices.
 
 from zope.interface import implementer, Interface
 
+from characteristic import attributes
+
 from .. import IDeployer
 
 
@@ -29,6 +31,7 @@ class IBlockDeviceAPI(Interface):
 
 
 @implementer(IBlockDeviceAPI)
+@attributes(['root_path'])
 class LoopbackBlockDeviceAPI(object):
     """
     """
