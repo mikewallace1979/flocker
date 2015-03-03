@@ -5,6 +5,7 @@ This module implements the parts of a block-device based dataset
 convergence agent that can be re-used against many different kinds of block
 devices.
 """
+from uuid import uuid4
 
 from zope.interface import implementer, Interface
 
@@ -42,6 +43,8 @@ class BlockDeviceVolume(object):
 class LoopbackBlockDeviceAPI(object):
     """
     """
+    unattached_directory = None
+
     @classmethod
     def from_path(cls, root_path):
         """
@@ -53,14 +56,19 @@ class LoopbackBlockDeviceAPI(object):
     def _initialise_directories(self):
         """
         """
-        unattached_directory = self.root_path.child('unattached')
-        unattached_directory.makedirs()
+        self._unattached_directory = self.root_path.child('unattached')
+        self._unattached_directory.makedirs()
 
     def create_volume(self):
         """
         * create a file of some size (maybe size is required parameter)
         * put it in the IaaS's "unattached" directory
         """
+        volume = BlockDeviceVolume(
+            blockdevice_id=bytes(uuid4()).encode('ascii')
+        )
+        self._unattached_directory.child(volume.blockdevice_id).setContent(b'')
+        return volume
 
     def attach_volume(self):
         """

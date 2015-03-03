@@ -43,6 +43,13 @@ class IBlockDeviceAPITestsMixin(object):
         """
         self.assertEqual([], self.api.list_volumes())
 
+    def test_created_is_listed(self):
+        """
+        ``create_volume`` returns a ``BlockVolume`` that is returned by
+        ``list_volumes``.
+        """
+        new_volume = self.api.create_volume()
+        self.assertIn(new_volume, self.api.list_volumes())
 
 
 def make_iblockdeviceapi_tests(blockdevice_api_factory):
