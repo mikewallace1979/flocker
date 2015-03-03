@@ -24,6 +24,19 @@ class BlockDeviceDeployerTests(SynchronousTestCase):
             verifyObject(IDeployer, BlockDeviceDeployer())
         )
 
+    def test_discover_local_state(self):
+        """
+        ``BlockDeviceDeployer.discover_local_state``
+        """
+        api = LoopbackBlockDeviceAPI.from_path(self.mktemp())
+        deployer = BlockDeviceDeployer(block_device_api=api)
+        discovering = deployer.discover_local_state()
+        state = self.successResultOf(discovering)
+        self.assertEqual(
+            NodeState(
+
+
+
 
 class IBlockDeviceAPITestsMixin(object):
     """
