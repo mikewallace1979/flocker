@@ -6,8 +6,20 @@ convergence agent that can be re-used against many different kinds of block
 devices.
 """
 
-from zope.interface import implementer
+from zope.interface import implementer, Interface
+
 from .. import IDeployer
+
+
+class IBlockDeviceAPI(Interface):
+    """
+    """
+
+@implementer(IBlockDeviceAPI)
+class LoopbackBlockDeviceAPI(object):
+    """
+    """
+
 
 @implementer(IDeployer)
 # @attributes(["hostname", "block_device_api"])
