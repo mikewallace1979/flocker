@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from zope.interface import implementer, Interface
 
-from characteristic import attributes
+from characteristic import attributes, Attribute
 
 from twisted.python.filepath import FilePath
 
@@ -24,7 +24,7 @@ class IBlockDeviceAPI(Interface):
         """
         """
 
-    def attach_volume():
+    def attach_volume(blockdevice_id):
         """
         """
 
@@ -32,10 +32,11 @@ class IBlockDeviceAPI(Interface):
         """
         """
 
-@attributes(['blockdevice_id', 'size'])
+@attributes(['blockdevice_id', 'size', Attribute('host', default_value=None)])
 class BlockDeviceVolume(object):
     """
     """
+
 
 
 @implementer(IBlockDeviceAPI)
@@ -58,6 +59,8 @@ class LoopbackBlockDeviceAPI(object):
         """
         self._unattached_directory = self.root_path.child('unattached')
         self._unattached_directory.makedirs()
+        self._attached_directory = self.root_path.child('attached')
+        self._attached_directory.makedirs()
 
     def create_volume(self, size):
         """
@@ -66,17 +69,18 @@ class LoopbackBlockDeviceAPI(object):
         """
         volume = BlockDeviceVolume(
             blockdevice_id=bytes(uuid4()).encode('ascii'),
-            size=size
+            size=size,
         )
         self._unattached_directory.child(
             volume.blockdevice_id
         ).setContent(b'\0' * volume.size)
         return volume
 
-    def attach_volume(self):
+    def attach_volume(self, blockdevice_id):
         """
         * move file into per-host (eg named after node ip) directory
         """
+
 
     def list_volumes(self):
         """
@@ -89,6 +93,18 @@ class LoopbackBlockDeviceAPI(object):
                 size=child.getsize(),
             )
             volumes.append(volume)
+
+        for host_directory in self.root_path.child('attached').children():
+            host_name = host_directory.basename()
+            for child in host_directory.children():
+
+                volume = BlockDeviceVolume(
+                    blockdevice_id=child.basename().decode('ascii'),
+                    size=child.getsize(),
+                    host=host_name
+                )
+                volumes.append(volume)
+
         return volumes
 
 

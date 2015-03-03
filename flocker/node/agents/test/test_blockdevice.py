@@ -51,6 +51,11 @@ class IBlockDeviceAPITestsMixin(object):
         new_volume = self.api.create_volume(size=1000)
         self.assertIn(new_volume, self.api.list_volumes())
 
+    def test_attach_unattached_volume(self):
+        """
+        An unattached ``BlockDeviceVolume`` can be attached.
+        """
+
 
 def make_iblockdeviceapi_tests(blockdevice_api_factory):
     """
@@ -92,10 +97,33 @@ class LoopbackBlockDeviceAPIImplementationTests(SynchronousTestCase):
         api = loopbackblockdeviceapi_for_test(test_case=self)
         blockdevice_volume = BlockDeviceVolume(
             blockdevice_id=bytes(uuid4()),
-            size=expected_size
+            size=expected_size,
+            host=None,
         )
         (api
          .root_path.child('unattached')
+         .child(blockdevice_volume.blockdevice_id)
+         .setContent(b'x' * expected_size))
+        self.assertEqual([blockdevice_volume], api.list_volumes())
+
+
+    def test_list_attached_volumes(self):
+        """
+        ``list_volumes`` returns a ``BlockVolume`` for each attached volume
+        file.
+        """
+        expected_size = 1234
+        expected_host = b'192.0.2.123'
+        api = loopbackblockdeviceapi_for_test(test_case=self)
+        blockdevice_volume = BlockDeviceVolume(
+            blockdevice_id=bytes(uuid4()),
+            size=expected_size,
+            host=expected_host,
+        )
+
+        host_dir = api.root_path.child('attached').child(expected_host)
+        host_dir.makedirs()
+        (host_dir
          .child(blockdevice_volume.blockdevice_id)
          .setContent(b'x' * expected_size))
         self.assertEqual([blockdevice_volume], api.list_volumes())
