@@ -93,17 +93,16 @@ class LoopbackBlockDeviceAPI(object):
         * move file into per-host (eg named after node ip) directory
         """
         for volume in self.list_volumes():
-            if volume.host == host:
-                raise AlreadyAttachedVolume()
             if volume.blockdevice_id == blockdevice_id:
-                attached_volume = volume.set(host=host)
-                f = self._unattached_directory.child(attached_volume.blockdevice_id)
-                host_directory = self._attached_directory.child(host)
-                host_directory.makedirs()
-                f.moveTo(host_directory.child(f.basename()))
-                return attached_volume
-        else:
-            raise UnknownVolume()
+                if volume.host is None:
+                    attached_volume = volume.set(host=host)
+                    f = self._unattached_directory.child(attached_volume.blockdevice_id)
+                    host_directory = self._attached_directory.child(host)
+                    host_directory.makedirs()
+                    f.moveTo(host_directory.child(f.basename()))
+                    return attached_volume
+                raise AlreadyAttachedVolume()
+        raise UnknownVolume()
 
     def list_volumes(self):
         """

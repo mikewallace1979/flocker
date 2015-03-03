@@ -67,8 +67,22 @@ class IBlockDeviceAPITestsMixin(object):
         """
         An attempt to attach an already attached ``BlockDeviceVolume`` raises
         ``AlreadyAttachedVolume``.
-        A request to attach a volume which is already attached to the requested
-        host, also raises ``AlreadyAttachedVolume``.
+        """
+        host = b'192.0.2.123'
+        new_volume = self.api.create_volume(size=1234)
+        attached_volume = self.api.attach_volume(new_volume.blockdevice_id, host=host)
+
+        self.assertRaises(
+            AlreadyAttachedVolume,
+            self.api.attach_volume,
+            blockdevice_id=attached_volume.blockdevice_id,
+            host=host
+        )
+
+    def test_attach_elsewhere_attached_volume(self):
+        """
+        An attempt to attach a ``BlockDeviceVolume`` already attached to
+        another host raises ``AlreadyAttachedVolume``.
         """
         new_volume = self.api.create_volume(size=1234)
         attached_volume = self.api.attach_volume(new_volume.blockdevice_id, host=b'192.0.2.123')
@@ -77,7 +91,7 @@ class IBlockDeviceAPITestsMixin(object):
             AlreadyAttachedVolume,
             self.api.attach_volume,
             blockdevice_id=attached_volume.blockdevice_id,
-            host=b'192.0.2.123'
+            host=b'192.0.2.124'
         )
 
     def test_attach_unattached_volume(self):
