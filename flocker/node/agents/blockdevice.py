@@ -158,8 +158,8 @@ class BlockDeviceDeployer(object):
 
         state = NodeState(
             hostname=self.hostname,
-            running=frozenset(),
-            not_running=frozenset(),
+            running=(),
+            not_running=(),
             manifestations=[_manifestation_from_volume(v)
                             for v in volumes
                             if v.host == self.hostname],

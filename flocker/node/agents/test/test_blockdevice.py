@@ -57,9 +57,9 @@ class BlockDeviceDeployerDiscoverLocalStateTests(SynchronousTestCase):
         self.assertEqual(
             NodeState(
                 hostname=expected_hostname,
-                running=frozenset(),
-                not_running=frozenset(),
-                manifestations=frozenset()
+                running=(),
+                not_running=(),
+                manifestations=()
             ),
             state
         )
@@ -85,8 +85,8 @@ class BlockDeviceDeployerDiscoverLocalStateTests(SynchronousTestCase):
         self.assertEqual(
             NodeState(
                 hostname=expected_hostname,
-                running=frozenset(),
-                not_running=frozenset(),
+                running=(),
+                not_running=(),
                 manifestations=[expected_manifestation]
             ),
             state
@@ -110,8 +110,8 @@ class BlockDeviceDeployerDiscoverLocalStateTests(SynchronousTestCase):
         self.assertEqual(
             NodeState(
                 hostname=expected_hostname,
-                running=frozenset(),
-                not_running=frozenset(),
+                running=(),
+                not_running=(),
                 manifestations=[]
             ),
             state
@@ -134,8 +134,8 @@ class BlockDeviceDeployerDiscoverLocalStateTests(SynchronousTestCase):
         self.assertEqual(
             NodeState(
                 hostname=expected_hostname,
-                running=frozenset(),
-                not_running=frozenset(),
+                running=(),
+                not_running=(),
                 manifestations=[]
             ),
             state
