@@ -377,6 +377,9 @@ class NodeState(PRecord):
                     mandatory=True)
     not_running = field(type=PSet, initial=pset(), factory=pset,
                         mandatory=True)
+    # XXX: Consider an issue for a new `DatasetState` so that dataset
+    # convergence agents don't have to worry about running and not_running
+    # applications.
     manifestations = field(type=PSet, initial=pset(), factory=pset,
                            mandatory=True)
 
