@@ -6,6 +6,7 @@ convergence agent that can be re-used against many different kinds of block
 devices.
 """
 from uuid import uuid4
+from subprocess import check_output
 
 from zope.interface import implementer, Interface
 
@@ -15,8 +16,8 @@ from pyrsistent import PRecord, field
 from twisted.internet.defer import succeed
 from twisted.python.filepath import FilePath
 
-from .. import IDeployer
-from ...control import NodeState, Manifestation, Dataset
+from .. import IDeployer, IStateChange, Sequentially, InParallel
+from ...control import Node, NodeState, Manifestation, Dataset
 
 
 class UnknownVolume(Exception):
@@ -27,6 +28,34 @@ class UnknownVolume(Exception):
 class AlreadyAttachedVolume(Exception):
     """
     """
+
+class UnattachedVolume(Exception):
+    pass
+
+
+
+@implementer(IStateChange)
+class CreateBlockDeviceDataset(PRecord):
+    """
+    An operation to create a new dataset on a newly created volume with a newly
+    initialized filesystem.
+    """
+    dataset = field()
+    mountpoint = field(mandatory=True)
+
+    def run(self, deployer):
+        api = deployer.block_device_api
+        volume = api.create_volume(
+            self.dataset.maximum_size
+        )
+        volume = api.attach_volume(
+            volume.blockdevice_id, deployer.hostname
+        )
+        device = api.get_device_path(volume.blockdevice_id).path
+        self.mountpoint.makedirs()
+        check_output(["mkfs", "-t", "ext4", device])
+        check_output(["mount", device, self.mountpoint.path])
+
 
 
 class IBlockDeviceAPI(Interface):
@@ -75,6 +104,20 @@ class LoopbackBlockDeviceAPI(object):
         self._attached_directory = self.root_path.child('attached')
         self._attached_directory.makedirs()
 
+    def get_device_path(self, blockdevice_id):
+        volume = self._get(blockdevice_id)
+        if volume.host is not None:
+            # either:
+            return check_output(["losetup", "-n", "-O", "name", "-j", "backing file"])
+            # or:
+            return check_output(["losetup", "backing file"])
+
+            # return "/dev/loopN"
+            # return self._attached_directory.descendant([
+            #     volume.host, blockdevice_id
+            # ])
+        raise UnattachedVolume()
+
     def create_volume(self, size):
         """
         * create a file of some size (maybe size is required parameter)
@@ -104,11 +147,11 @@ class LoopbackBlockDeviceAPI(object):
             raise UnknownVolume()
 
         if volume.host is None:
-            attached_volume = volume.set(host=host)
-            f = self._unattached_directory.child(attached_volume.blockdevice_id)
+            old_path = self._unattached_directory.child(blockdevice_id)
             host_directory = self._attached_directory.child(host)
+            attached_volume = volume.set(host=host)
             host_directory.makedirs()
-            f.moveTo(host_directory.child(f.basename()))
+            old_path.moveTo(host_directory.child(blockdevice_id))
             return attached_volume
 
         raise AlreadyAttachedVolume()
@@ -132,7 +175,7 @@ class LoopbackBlockDeviceAPI(object):
                 volume = BlockDeviceVolume(
                     blockdevice_id=child.basename(),
                     size=child.getsize(),
-                    host=host_name
+                    host=host_name,
                 )
                 volumes.append(volume)
 
@@ -151,6 +194,8 @@ def _manifestation_from_volume(volume):
 class BlockDeviceDeployer(object):
     """
     """
+    _mountroot = FilePath(b"/flocker")
+
     def discover_local_state(self):
         """
         """
@@ -171,3 +216,27 @@ class BlockDeviceDeployer(object):
                                           current_cluster_state):
         """
         """
+        potential_configs = list(
+            node for node in desired_configuration.nodes
+            if node.hostname == self.hostname
+        )
+        if len(potential_configs) == 0:
+            this_node_config = Node(hostname=None)
+        else:
+            [this_node_config] = potential_configs
+        configured = set(this_node_config.manifestations.values())
+        to_create = configured.difference(local_state.manifestations)
+
+        # TODO check for non-None size on dataset; cannot create block devices
+        # of unspecified size.
+        creates = list(
+            CreateBlockDeviceDataset(
+                dataset=manifestation.dataset,
+                mountpoint=self._mountroot.child(
+                    manifestation.dataset.dataset_id.encode("ascii")
+                )
+            )
+            for manifestation
+            in to_create
+        )
+        return InParallel(changes=creates)
