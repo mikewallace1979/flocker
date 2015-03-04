@@ -59,8 +59,6 @@ class BlockDeviceVolume(PRecord):
 class LoopbackBlockDeviceAPI(object):
     """
     """
-    unattached_directory = None
-
     @classmethod
     def from_path(cls, root_path):
         """
