@@ -40,29 +40,46 @@ class BlockDeviceDeployerDiscoverLocalStateTests(SynchronousTestCase):
     """
     Tests for ``BlockDeviceDeployer.discover_local_state``.
     """
+    def setUp(self):
+        self.expected_hostname = b'192.0.2.123'
+        self.api = LoopbackBlockDeviceAPI.from_path(self.mktemp())
+        self.deployer = BlockDeviceDeployer(
+            hostname=self.expected_hostname,
+            block_device_api=self.api
+        )
+
+    def assertDiscoveredState(self, deployer, expected_manifestations):
+        """
+        Assert that the manifestations on the state object returned by
+        ``deployer.discover_local_state`` equals the given list of
+        manifestations.
+
+        :param IDeployer deployer: The object to use to discover the state.
+        :param list expected_manifestations: The ``Manifestation``\ s expected
+            to be discovered.
+
+        :raise: A test failure exception if the manifestations are not what is
+            expected.
+        """
+        discovering = deployer.discover_local_state()
+        state = self.successResultOf(discovering)
+        self.assertEqual(
+            NodeState(
+                hostname=deployer.hostname,
+                running=(),
+                not_running=(),
+                manifestations=expected_manifestations,
+            ),
+            state
+        )
+
     def test_no_devices(self):
         """
         ``BlockDeviceDeployer.discover_local_state`` returns a ``NodeState``
         with empty ``manifestations`` if the ``api`` reports no locally
         attached volumes.
         """
-        expected_hostname = b'192.0.2.123'
-        api = LoopbackBlockDeviceAPI.from_path(self.mktemp())
-        deployer = BlockDeviceDeployer(
-            hostname=expected_hostname,
-            block_device_api=api
-        )
-        discovering = deployer.discover_local_state()
-        state = self.successResultOf(discovering)
-        self.assertEqual(
-            NodeState(
-                hostname=expected_hostname,
-                running=(),
-                not_running=(),
-                manifestations=()
-            ),
-            state
-        )
+        self.assertDiscoveredState(self.deployer, [])
 
     def test_one_device(self):
         """
@@ -70,76 +87,30 @@ class BlockDeviceDeployerDiscoverLocalStateTests(SynchronousTestCase):
         with one ``manifestations`` if the ``api`` reports one locally
         attached volumes.
         """
-        expected_hostname = b'192.0.2.123'
-        api = LoopbackBlockDeviceAPI.from_path(self.mktemp())
-        new_volume = api.create_volume(size=1234)
-        attached_volume = api.attach_volume(new_volume.blockdevice_id, expected_hostname)
+        new_volume = self.api.create_volume(size=1234)
+        attached_volume = self.api.attach_volume(
+            new_volume.blockdevice_id, self.expected_hostname
+        )
         expected_dataset = Dataset(dataset_id=attached_volume.blockdevice_id)
         expected_manifestation = Manifestation(dataset=expected_dataset, primary=True)
-        deployer = BlockDeviceDeployer(
-            hostname=expected_hostname,
-            block_device_api=api
-        )
-        discovering = deployer.discover_local_state()
-        state = self.successResultOf(discovering)
-        self.assertEqual(
-            NodeState(
-                hostname=expected_hostname,
-                running=(),
-                not_running=(),
-                manifestations=[expected_manifestation]
-            ),
-            state
-        )
+        self.assertDiscoveredState(self.deployer, [expected_manifestation])
 
     def test_only_remote_device(self):
         """
         ``BlockDeviceDeployer.discover_local_state`` does not consider remotely
         attached volumes.
         """
-        expected_hostname = b'192.0.2.123'
-        api = LoopbackBlockDeviceAPI.from_path(self.mktemp())
-        new_volume = api.create_volume(size=1234)
-        api.attach_volume(new_volume.blockdevice_id, b'some.other.host')
-        deployer = BlockDeviceDeployer(
-            hostname=expected_hostname,
-            block_device_api=api
-        )
-        discovering = deployer.discover_local_state()
-        state = self.successResultOf(discovering)
-        self.assertEqual(
-            NodeState(
-                hostname=expected_hostname,
-                running=(),
-                not_running=(),
-                manifestations=[]
-            ),
-            state
-        )
+        new_volume = self.api.create_volume(size=1234)
+        self.api.attach_volume(new_volume.blockdevice_id, b'some.other.host')
+        self.assertDiscoveredState(self.deployer, [])
 
-    def test_only_attached_devices(self):
+    def test_only_unattached_devices(self):
         """
         ``BlockDeviceDeployer.discover_local_state`` does not consider
         unattached volumes.
         """
-        expected_hostname = b'192.0.2.123'
-        api = LoopbackBlockDeviceAPI.from_path(self.mktemp())
-        api.create_volume(size=1234)
-        deployer = BlockDeviceDeployer(
-            hostname=expected_hostname,
-            block_device_api=api
-        )
-        discovering = deployer.discover_local_state()
-        state = self.successResultOf(discovering)
-        self.assertEqual(
-            NodeState(
-                hostname=expected_hostname,
-                running=(),
-                not_running=(),
-                manifestations=[]
-            ),
-            state
-        )
+        self.api.create_volume(size=1234)
+        self.assertDiscoveredState(self.deployer, [])
 
 
 class IBlockDeviceAPITestsMixin(object):
