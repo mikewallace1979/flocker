@@ -50,6 +50,7 @@ class BlockDeviceVolume(PRecord):
     """
     blockdevice_id = field(type=bytes, mandatory=True)
     size = field(type=int, mandatory=True)
+    # XXX: This should be hostname, for consistency.
     host = field(type=(bytes, type(None)), initial=None)
 
 
