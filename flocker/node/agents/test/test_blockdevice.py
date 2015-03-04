@@ -94,6 +94,33 @@ class BlockDeviceDeployerDiscoverLocalStateTests(SynchronousTestCase):
         )
 
 
+
+    def test_only_remote_device(self):
+        """
+        ``BlockDeviceDeployer.discover_local_state`` does not consider remotely
+        attached volumes.
+        """
+        expected_hostname = b'192.0.2.123'
+        api = LoopbackBlockDeviceAPI.from_path(self.mktemp())
+        new_volume = api.create_volume(size=1234)
+        api.attach_volume(new_volume.blockdevice_id, b'some.other.host')
+        deployer = BlockDeviceDeployer(
+            hostname=expected_hostname,
+            block_device_api=api
+        )
+        discovering = deployer.discover_local_state()
+        state = self.successResultOf(discovering)
+        self.assertEqual(
+            NodeState(
+                hostname=expected_hostname,
+                running=frozenset(),
+                not_running=frozenset(),
+                manifestations=[]
+            ),
+            state
+        )
+
+
 class IBlockDeviceAPITestsMixin(object):
     """
     """
