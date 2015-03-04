@@ -161,7 +161,9 @@ class BlockDeviceDeployer(object):
             hostname=self.hostname,
             running=frozenset(),
             not_running=frozenset(),
-            manifestations=[_manifestation_from_volume(v) for v in volumes],
+            manifestations=[_manifestation_from_volume(v)
+                            for v in volumes
+                            if v.host == self.hostname],
         )
         return succeed(state)
 
