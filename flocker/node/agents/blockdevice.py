@@ -16,7 +16,7 @@ from twisted.internet.defer import succeed
 from twisted.python.filepath import FilePath
 
 from .. import IDeployer
-from ...control import NodeState
+from ...control import NodeState, Manifestation, Dataset
 
 
 class UnknownVolume(Exception):
@@ -140,6 +140,13 @@ class LoopbackBlockDeviceAPI(object):
         return volumes
 
 
+def _manifestation_from_volume(volume):
+    """
+    """
+    dataset = Dataset(dataset_id=volume.blockdevice_id)
+    return Manifestation(dataset=dataset, primary=True)
+
+
 @implementer(IDeployer)
 @attributes(["hostname", "block_device_api"])
 class BlockDeviceDeployer(object):
@@ -148,11 +155,13 @@ class BlockDeviceDeployer(object):
     def discover_local_state(self):
         """
         """
+        volumes = self.block_device_api.list_volumes()
 
         state = NodeState(
             hostname=self.hostname,
             running=frozenset(),
-            not_running=frozenset()
+            not_running=frozenset(),
+            manifestations=[_manifestation_from_volume(v) for v in volumes],
         )
         return succeed(state)
 

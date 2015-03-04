@@ -11,6 +11,7 @@ from ..blockdevice import (
 )
 
 from ..._deploy import IDeployer, NodeState
+from ....control import Dataset, Manifestation
 
 from twisted.trial.unittest import SynchronousTestCase
 
@@ -57,7 +58,37 @@ class BlockDeviceDeployerDiscoverLocalStateTests(SynchronousTestCase):
             NodeState(
                 hostname=expected_hostname,
                 running=frozenset(),
-                not_running=frozenset()
+                not_running=frozenset(),
+                manifestations=frozenset()
+            ),
+            state
+        )
+
+
+    def test_one_device(self):
+        """
+        ``BlockDeviceDeployer.discover_local_state`` returns a ``NodeState``
+        with one ``manifestations`` if the ``api`` reports one locally
+        attached volumes.
+        """
+        expected_hostname = b'192.0.2.123'
+        api = LoopbackBlockDeviceAPI.from_path(self.mktemp())
+        new_volume = api.create_volume(size=1234)
+        attached_volume = api.attach_volume(new_volume.blockdevice_id, expected_hostname)
+        expected_dataset = Dataset(dataset_id=attached_volume.blockdevice_id)
+        expected_manifestation = Manifestation(dataset=expected_dataset, primary=True)
+        deployer = BlockDeviceDeployer(
+            hostname=expected_hostname,
+            block_device_api=api
+        )
+        discovering = deployer.discover_local_state()
+        state = self.successResultOf(discovering)
+        self.assertEqual(
+            NodeState(
+                hostname=expected_hostname,
+                running=frozenset(),
+                not_running=frozenset(),
+                manifestations=[expected_manifestation]
             ),
             state
         )
