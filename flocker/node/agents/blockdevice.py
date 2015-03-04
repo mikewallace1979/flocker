@@ -12,9 +12,11 @@ from zope.interface import implementer, Interface
 from characteristic import attributes
 from pyrsistent import PRecord, field
 
+from twisted.internet.defer import succeed
 from twisted.python.filepath import FilePath
 
 from .. import IDeployer
+from ...control import NodeState
 
 
 class UnknownVolume(Exception):
@@ -146,7 +148,13 @@ class BlockDeviceDeployer(object):
     def discover_local_state(self):
         """
         """
-        return
+
+        state = NodeState(
+            hostname=self.hostname,
+            running=frozenset(),
+            not_running=frozenset()
+        )
+        return succeed(state)
 
     def calculate_necessary_state_changes(self, local_state,
                                           desired_configuration,

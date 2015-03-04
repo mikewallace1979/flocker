@@ -45,15 +45,20 @@ class BlockDeviceDeployerDiscoverLocalStateTests(SynchronousTestCase):
         with empty ``manifestations`` if the ``api`` reports no locally
         attached volumes.
         """
+        expected_hostname = b'192.0.2.123'
         api = LoopbackBlockDeviceAPI.from_path(self.mktemp())
         deployer = BlockDeviceDeployer(
-            hostname=b'192.0.2.123',
+            hostname=expected_hostname,
             block_device_api=api
         )
         discovering = deployer.discover_local_state()
         state = self.successResultOf(discovering)
         self.assertEqual(
-            NodeState(),
+            NodeState(
+                hostname=expected_hostname,
+                running=frozenset(),
+                not_running=frozenset()
+            ),
             state
         )
 
