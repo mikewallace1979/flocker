@@ -146,6 +146,7 @@ class BlockDeviceDeployer(object):
     def discover_local_state(self):
         """
         """
+        return
 
     def calculate_necessary_state_changes(self, local_state,
                                           desired_configuration,

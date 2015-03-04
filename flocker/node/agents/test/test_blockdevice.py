@@ -16,6 +16,9 @@ from twisted.trial.unittest import SynchronousTestCase
 
 
 class BlockDeviceDeployerTests(SynchronousTestCase):
+    """
+    Tests for ``BlockDeviceDeployer``.
+    """
     def test_interface(self):
         """
         ``BlockDeviceDeployer`` instances provide ``IDeployer``.
@@ -31,9 +34,16 @@ class BlockDeviceDeployerTests(SynchronousTestCase):
             )
         )
 
-    def test_discover_local_state(self):
+
+class BlockDeviceDeployerDiscoverLocalStateTests(SynchronousTestCase):
+    """
+    Tests for ``BlockDeviceDeployer.discover_local_state``.
+    """
+    def test_no_devices(self):
         """
-        ``BlockDeviceDeployer.discover_local_state``
+        ``BlockDeviceDeployer.discover_local_state`` returns a ``NodeState``
+        with empty ``manifestations`` if the ``api`` reports no locally
+        attached volumes.
         """
         api = LoopbackBlockDeviceAPI.from_path(self.mktemp())
         deployer = BlockDeviceDeployer(
