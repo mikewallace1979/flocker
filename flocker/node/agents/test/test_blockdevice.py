@@ -10,7 +10,7 @@ from ..blockdevice import (
     BlockDeviceVolume, UnknownVolume, AlreadyAttachedVolume,
 )
 
-from ..._deploy import IDeployer
+from ..._deploy import IDeployer, NodeState
 
 from twisted.trial.unittest import SynchronousTestCase
 
@@ -20,8 +20,15 @@ class BlockDeviceDeployerTests(SynchronousTestCase):
         """
         ``BlockDeviceDeployer`` instances provide ``IDeployer``.
         """
+        api = LoopbackBlockDeviceAPI.from_path(self.mktemp())
         self.assertTrue(
-            verifyObject(IDeployer, BlockDeviceDeployer())
+            verifyObject(
+                IDeployer,
+                BlockDeviceDeployer(
+                    hostname=b'192.0.2.123',
+                    block_device_api=api
+                )
+            )
         )
 
     def test_discover_local_state(self):
@@ -29,13 +36,16 @@ class BlockDeviceDeployerTests(SynchronousTestCase):
         ``BlockDeviceDeployer.discover_local_state``
         """
         api = LoopbackBlockDeviceAPI.from_path(self.mktemp())
-        deployer = BlockDeviceDeployer(block_device_api=api)
+        deployer = BlockDeviceDeployer(
+            hostname=b'192.0.2.123',
+            block_device_api=api
+        )
         discovering = deployer.discover_local_state()
         state = self.successResultOf(discovering)
         self.assertEqual(
-            NodeState(
-
-
+            NodeState(),
+            state
+        )
 
 
 class IBlockDeviceAPITestsMixin(object):

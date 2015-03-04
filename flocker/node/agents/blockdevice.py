@@ -139,7 +139,7 @@ class LoopbackBlockDeviceAPI(object):
 
 
 @implementer(IDeployer)
-# @attributes(["hostname", "block_device_api"])
+@attributes(["hostname", "block_device_api"])
 class BlockDeviceDeployer(object):
     """
     """
