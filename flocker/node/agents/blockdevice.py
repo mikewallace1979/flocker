@@ -19,17 +19,31 @@ from twisted.python.filepath import FilePath
 from .. import IDeployer, IStateChange, Sequentially, InParallel
 from ...control import Node, NodeState, Manifestation, Dataset
 
+class VolumeException(Exception):
+    """
+    """
+    def __init__(self, blockdevice_id):
+        if not isinstance(blockdevice_id, unicode):
+            raise TypeError(
+                'Unexpected blockdevice_id type. '
+                'Expected unicode. '
+                'Got {!r}.'.format(blockdevice_id)
+            )
+        Exception.__init__(self, blockdevice_id)
+        self.blockdevice_id = blockdevice_id
 
-class UnknownVolume(Exception):
+
+class UnknownVolume(VolumeException):
     """
     """
 
 
-class AlreadyAttachedVolume(Exception):
+class AlreadyAttachedVolume(VolumeException):
     """
     """
 
-class UnattachedVolume(Exception):
+
+class UnattachedVolume(VolumeException):
     pass
 
 
@@ -82,7 +96,7 @@ class IBlockDeviceAPI(Interface):
 class BlockDeviceVolume(PRecord):
     """
     """
-    blockdevice_id = field(type=bytes, mandatory=True)
+    blockdevice_id = field(type=unicode, mandatory=True)
     size = field(type=int, mandatory=True)
     # XXX: This should be hostname, for consistency.
     host = field(type=(bytes, type(None)), initial=None)
@@ -113,6 +127,7 @@ class LoopbackBlockDeviceAPI(object):
         volume = self._get(blockdevice_id)
 
         if volume.host is not None:
+            return FilePath(b'/baz/quux')
             # # either:
             # return check_output(["losetup", "-n", "-O", "name", "-j", "backing file"])
             # # or:
@@ -122,8 +137,7 @@ class LoopbackBlockDeviceAPI(object):
             # # return self._attached_directory.descendant([
             # #     volume.host, blockdevice_id
             # # ])
-            return
-        raise UnattachedVolume()
+        raise UnattachedVolume(blockdevice_id)
 
     def create_volume(self, size):
         """
@@ -131,11 +145,11 @@ class LoopbackBlockDeviceAPI(object):
         * put it in the IaaS's "unattached" directory
         """
         volume = BlockDeviceVolume(
-            blockdevice_id=bytes(uuid4()),
+            blockdevice_id=unicode(uuid4()),
             size=size,
         )
         self._unattached_directory.child(
-            volume.blockdevice_id
+            volume.blockdevice_id.encode('ascii')
         ).setContent(b'\0' * volume.size)
         return volume
 
@@ -143,7 +157,7 @@ class LoopbackBlockDeviceAPI(object):
         for volume in self.list_volumes():
             if volume.blockdevice_id == blockdevice_id:
                 return volume
-        raise UnknownVolume()
+        raise UnknownVolume(blockdevice_id)
 
     def attach_volume(self, blockdevice_id, host):
         """
@@ -158,7 +172,7 @@ class LoopbackBlockDeviceAPI(object):
             old_path.moveTo(host_directory.child(blockdevice_id))
             return attached_volume
 
-        raise AlreadyAttachedVolume()
+        raise AlreadyAttachedVolume(blockdevice_id)
 
     def list_volumes(self):
         """
@@ -167,7 +181,7 @@ class LoopbackBlockDeviceAPI(object):
         volumes = []
         for child in self.root_path.child('unattached').children():
             volume = BlockDeviceVolume(
-                blockdevice_id=child.basename(),
+                blockdevice_id=child.basename().decode('ascii'),
                 size=child.getsize(),
             )
             volumes.append(volume)
@@ -177,7 +191,7 @@ class LoopbackBlockDeviceAPI(object):
             for child in host_directory.children():
 
                 volume = BlockDeviceVolume(
-                    blockdevice_id=child.basename(),
+                    blockdevice_id=child.basename().decode('ascii'),
                     size=child.getsize(),
                     host=host_name,
                 )

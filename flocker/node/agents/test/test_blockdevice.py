@@ -229,7 +229,7 @@ class IBlockDeviceAPITestsMixin(object):
         self.assertRaises(
             UnknownVolume,
             self.api.attach_volume,
-            blockdevice_id=bytes(uuid4()),
+            blockdevice_id=unicode(uuid4()),
             host=b'192.0.2.123'
         )
 
@@ -310,11 +310,12 @@ class IBlockDeviceAPITestsMixin(object):
         ``blockdevice_id`` has not been created.
         """
         unknown_blockdevice_id = unicode(uuid4())
-        self.assertRaises(
+        exception = self.assertRaises(
             UnknownVolume,
             self.api.get_device_path,
             unknown_blockdevice_id
         )
+        self.assertEqual(unknown_blockdevice_id, exception.blockdevice_id)
 
     def test_get_device_path_unattached_volume(self):
         """
@@ -322,12 +323,27 @@ class IBlockDeviceAPITestsMixin(object):
         ``blockdevice_id`` corresponds to an unattached volume.
         """
         new_volume = self.api.create_volume(size=1000)
-        self.assertRaises(
+        exception = self.assertRaises(
             UnattachedVolume,
             self.api.get_device_path,
             new_volume.blockdevice_id
         )
+        self.assertEqual(new_volume.blockdevice_id, exception.blockdevice_id)
 
+    def test_get_device_path_device(self):
+        """
+        ``get_device_path`` returns a ``FilePath`` to the device representing
+        the attached volume.
+        """
+        new_volume = self.api.create_volume(size=1000)
+        attached_volume = self.api.attach_volume(
+            new_volume.blockdevice_id,
+            b'192.0.2.123'
+        )
+        self.assertEqual(
+            FilePath(b'/foo/bar'),
+            self.api.get_device_path(attached_volume.blockdevice_id)
+        )
 
 
 
@@ -370,7 +386,7 @@ class LoopbackBlockDeviceAPIImplementationTests(SynchronousTestCase):
         expected_size = 1234
         api = loopbackblockdeviceapi_for_test(test_case=self)
         blockdevice_volume = BlockDeviceVolume(
-            blockdevice_id=bytes(uuid4()),
+            blockdevice_id=unicode(uuid4()),
             size=expected_size,
         )
         (api
@@ -389,7 +405,7 @@ class LoopbackBlockDeviceAPIImplementationTests(SynchronousTestCase):
         expected_host = b'192.0.2.123'
         api = loopbackblockdeviceapi_for_test(test_case=self)
 
-        blockdevice_id = bytes(uuid4())
+        blockdevice_id = unicode(uuid4())
 
         host_dir = api.root_path.child('attached').child(expected_host)
         host_dir.makedirs()
