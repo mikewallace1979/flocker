@@ -74,6 +74,11 @@ class IBlockDeviceAPI(Interface):
         """
         """
 
+    def get_device_path(blockdevice_id):
+        """
+        """
+
+
 class BlockDeviceVolume(PRecord):
     """
     """

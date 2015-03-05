@@ -379,6 +379,11 @@ class LoopbackBlockDeviceAPIImplementationTests(SynchronousTestCase):
 
         self.assertEqual([blockdevice_volume], api.list_volumes())
 
+    def test_get_device_path(self):
+        """
+        ``get_device_path``
+        """
+
 
 class CreateBlockDeviceDatasetTests(SynchronousTestCase):
     """
