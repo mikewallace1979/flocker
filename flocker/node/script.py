@@ -7,6 +7,7 @@ tools.
 """
 
 import sys
+from functools import partial
 
 from yaml import safe_load, safe_dump
 from yaml.error import YAMLError
@@ -33,6 +34,7 @@ from ..control import (
 )
 from . import P2PNodeDeployer, change_node_state
 from ._loop import AgentLoopService
+from .agents.blockdevice import LoopbackBlockDeviceAPI, BlockDeviceDeployer
 
 
 __all__ = [
@@ -310,7 +312,8 @@ class DatasetAgentScript(object):
     Implement top-level logic for the ``flocker-dataset-agent`` script.
 
     :ivar deployer_factory: A one-argument callable to create an ``IDeployer``
-        provider for this script.
+        provider for this script.  The one argument is the ``hostname`` keyword
+        argument (it must be passed by keyword).
 
     :ivar service: The ``AgentLoopService`` that is created and started by
         ``main``.
@@ -318,14 +321,23 @@ class DatasetAgentScript(object):
     def main(self, reactor, options):
         self.service = AgentLoopService(
             reactor=reactor,
-            deployer=self.deployer_factory(options["hostname"]),
+            deployer=self.deployer_factory(hostname=options["hostname"]),
             host=options["destination-host"], port=options["destination-port"],
         )
         return main_for_service(reactor, self.service)
 
 
 def flocker_dataset_agent_main():
+    api = LoopbackBlockDeviceAPI.from_path(
+        b"/var/lib/flocker/loopback"
+    )
+    deployer_factory = partial(
+        BlockDeviceDeployer,
+        block_device_api=api,
+    )
     return FlockerScriptRunner(
-        script=DatasetAgentScript(deployer_factory=None),
+        script=DatasetAgentScript(
+            deployer_factory=deployer_factory
+        ),
         options=DatasetAgentOptions()
     ).main()

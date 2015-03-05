@@ -71,7 +71,6 @@ class CreateBlockDeviceDataset(PRecord):
         check_output(["mount", device, self.mountpoint.path])
 
 
-
 class IBlockDeviceAPI(Interface):
     """
     """

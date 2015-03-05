@@ -488,7 +488,12 @@ class DatasetAgentScriptTests(SynchronousTestCase):
         options.parseOptions([
             b"--destination-port", b"1234", b"10.0.0.1", b"10.0.0.2",
         ])
-        agent = DatasetAgentScript(deployer_factory=lambda hostname: deployer)
+
+        def factory(**kw):
+            if kw.keys() != ["hostname"]:
+                raise TypeError("wrong arguments")
+            return deployer
+        agent = DatasetAgentScript(deployer_factory=factory)
         agent.main(reactor, options)
         self.assertEqual(
             AgentLoopService(

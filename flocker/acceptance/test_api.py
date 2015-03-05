@@ -199,20 +199,21 @@ class Cluster(object):
         return request
 
 
-def cluster_for_test(test_case, node_addresses):
+def cluster_for_test(test_case, node_addresses, agent_command):
     """
     Build a ``Cluster`` instance with the supplied ``node_addresses``.
 
     ``flocker-control`` is started on the node with the lowest address and with
     a blank database.
 
-    ``flocker-zfs-agent`` is started on every node.
+    ``agent_command`` is started on every node.
 
     The processes will be killed after each test.
 
     :param TestCase test_case: The test case instance on which to register
         cleanup operations.
     :param list node_address: The IPv4 addresses of the nodes in the cluster.
+    :param bytes agent_command: The entry point for the agent to run on each node.
     :returns: A ``Cluster`` instance.
     """
     # Start servers; eventually we will have these already running on
@@ -234,7 +235,7 @@ def cluster_for_test(test_case, node_addresses):
         agent_service = remote_service_for_test(
             test_case,
             node_address,
-            [b"flocker-zfs-agent", node_address, control_service.address],
+            [agent_command, node_address, control_service.address],
         )
         node = Node(
             address=node_address,
@@ -245,7 +246,7 @@ def cluster_for_test(test_case, node_addresses):
     return Cluster(control_service=control_service, nodes=nodes)
 
 
-def create_cluster_and_wait_for_api(test_case, node_addresses):
+def create_cluster_and_wait_for_api(test_case, node_addresses, agent_command):
     """
     Build a ``Cluster`` instance with the supplied ``node_addresses``.
 
@@ -254,13 +255,13 @@ def create_cluster_and_wait_for_api(test_case, node_addresses):
     :param list node_addresses: The IPv4 addresses of the nodes in the cluster.
     :returns: A ``Cluster`` instance.
     """
-    cluster = cluster_for_test(test_case, node_addresses)
+    cluster = cluster_for_test(test_case, node_addresses, agent_command)
     waiting = wait_for_api(cluster.control_service.address)
     api_ready = waiting.addCallback(lambda ignored: cluster)
     return api_ready
 
 
-def wait_for_cluster(test_case, node_count):
+def wait_for_cluster(test_case, node_count, agent_command):
     """
     Build a ``Cluster`` instance with ``node_count`` nodes.
 
@@ -273,23 +274,24 @@ def wait_for_cluster(test_case, node_count):
     getting_nodes = get_nodes(test_case, node_count)
 
     getting_nodes.addCallback(
-        lambda nodes: create_cluster_and_wait_for_api(test_case, nodes)
+        lambda nodes: create_cluster_and_wait_for_api(test_case, nodes, agent_command)
     )
 
     return getting_nodes
 
 
-class DatasetAPITests(TestCase):
+class DatasetAPITestsMixin(object):
     """
     Tests for the dataset API.
     """
+    agent_command = None
+
     def test_dataset_creation(self):
         """
         A dataset can be created on a specific node.
         """
         # Create a 1 node cluster
-        waiting_for_cluster = wait_for_cluster(test_case=self, node_count=1)
-
+        waiting_for_cluster = wait_for_cluster(test_case=self, node_count=1, agent_command=self.agent_command)
         # Configure a dataset on node1
         def configure_dataset(cluster):
             """
@@ -313,12 +315,34 @@ class DatasetAPITests(TestCase):
 
         return waiting_for_create
 
+
+def make_dataset_api_tests(agent_command):
+    class Tests(DatasetAPITestsMixin, TestCase):
+        """
+        """
+        def setUp(self):
+            self.agent_command = agent_command
+
+    return Tests
+
+
+class GenericLoopbackDatasetAPITests(make_dataset_api_tests(b'flocker-dataset-agent')):
+    """
+    """
+
+
+class GenericZFSDatasetAPITests(make_dataset_api_tests(b'flocker-zfs-agent')):
+    """
+    """
+
+
+class LegacyZFSDatasetAPITests(make_dataset_api_tests(b'flocker-zfs-agent')):
     def test_dataset_move(self):
         """
         A dataset can be moved from one node to another.
         """
         # Create a 2 node cluster
-        waiting_for_cluster = wait_for_cluster(test_case=self, node_count=2)
+        waiting_for_cluster = wait_for_cluster(test_case=self, node_count=2, agent_command=self.agent_command)
 
         # Configure a dataset on node1
         def configure_dataset(cluster):
