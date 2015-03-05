@@ -127,9 +127,9 @@ class LoopbackBlockDeviceAPI(object):
         volume = self._get(blockdevice_id)
 
         if volume.host is not None:
-            return FilePath(b'/baz/quux')
-            # # either:
-            # return check_output(["losetup", "-n", "-O", "name", "-j", "backing file"])
+            return check_output(
+                ["losetup", "--noheadings", "-O", "name", "--associated", "need a method to locate the file"]
+            )
             # # or:
             # return check_output(["losetup", "backing file"])
 
