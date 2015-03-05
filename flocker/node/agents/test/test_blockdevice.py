@@ -346,7 +346,6 @@ class IBlockDeviceAPITestsMixin(object):
             u"Not a block device. Path: {!r}".format(device_path)
         )
 
-
     def test_get_device_path_device_exists(self):
         """
         ``get_device_path`` returns the same ``FilePath`` for the volume device
@@ -488,7 +487,7 @@ class CreateBlockDeviceDatasetTests(SynchronousTestCase):
              b"ext4"),
             mounts
         )
-    test_run.skip = 'foo'
+
 
 def get_mounts():
     """
