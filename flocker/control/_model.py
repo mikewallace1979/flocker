@@ -3,12 +3,22 @@
 
 """
 Record types for representing deployment models.
+
+There are different categories of classes:
+
+1. Those that involve information that can be both in configuration and state.
+   This includes ``Deployment`` and all classes on it.
+   (Metadata should really be configuration only, but that hasn't been
+   fixed yet on the model level.)
+2. State-specific classes, currently ``NodeState``.
+3. Configuration-specific classes, none implemented yet.
 """
 
 from characteristic import attributes, Attribute
 
+from twisted.python.filepath import FilePath
 from pyrsistent import (
-    pmap, PRecord, field, PMap, PSet, pset,
+    pmap, PRecord, field, PMap, PSet, pset, CheckedPMap
     )
 
 from zope.interface import Interface, implementer
@@ -331,7 +341,7 @@ class DatasetHandoff(object):
     """
 
 
-@attributes(["going", "coming", "creating", "resizing"])
+@attributes(["going", "coming", "creating", "resizing", "deleting"])
 class DatasetChanges(object):
     """
     The dataset-related changes necessary to change the current state to
@@ -353,12 +363,29 @@ class DatasetChanges(object):
         node resize any existing datasets that are desired somewhere on
         the cluster and locally exist with a different maximum_size to the
         desired maximum_size. These must be resized.
+
+    :ivar frozenset deleting: The ``Dataset``\ s that should be deleted.
     """
+
+
+class _PathMap(CheckedPMap):
+    """
+    A mapping between dataset IDs and the paths where they are mounted.
+
+    See https://github.com/tobgu/pyrsistent/issues/26 for more succinct
+    idiom combining this with ``field()``.
+    """
+    __key_type__ = unicode
+    __value_type__ = FilePath
 
 
 class NodeState(PRecord):
     """
     The current state of a node.
+
+    This includes information that is state-specific and thus does not
+    belong in ``Node``, the latter being shared between both state and
+    configuration models.
 
     :ivar unicode hostname: The hostname of the node.
     :ivar running: A ``PSet`` of ``Application`` instances on this node
@@ -369,6 +396,8 @@ class NodeState(PRecord):
         in use (by anything) on this node.
     :ivar PSet manifestations: All ``Manifestation`` instances that
         are present on the node.
+    :ivar PMap paths: The filesystem paths of the manifestations on this
+        node. Maps ``dataset_id`` to a ``FilePath``.
     """
     hostname = field(type=unicode, factory=unicode, mandatory=True)
     used_ports = field(type=PSet, initial=pset(), factory=pset,
@@ -382,6 +411,8 @@ class NodeState(PRecord):
     # applications.
     manifestations = field(type=PSet, initial=pset(), factory=pset,
                            mandatory=True)
+    paths = field(type=_PathMap, initial=_PathMap(), factory=_PathMap.create,
+                  mandatory=True)
 
     def to_node(self):
         """
