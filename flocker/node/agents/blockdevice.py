@@ -102,6 +102,15 @@ class BlockDeviceVolume(PRecord):
     host = field(type=(bytes, type(None)), initial=None)
 
 
+def device_for_path(file_path):
+    device_path =  check_output(
+        ["losetup", "--noheadings", "-O", "name", "--associated", file_path.path]
+    ).strip()
+    if device_path != b"":
+        return FilePath(device_path.strip())
+    return None
+
+
 @implementer(IBlockDeviceAPI)
 @attributes(['root_path'])
 class LoopbackBlockDeviceAPI(object):
@@ -127,16 +136,13 @@ class LoopbackBlockDeviceAPI(object):
         volume = self._get(blockdevice_id)
 
         if volume.host is not None:
-            return check_output(
-                ["losetup", "--noheadings", "-O", "name", "--associated", "need a method to locate the file"]
-            )
-            # # or:
-            # return check_output(["losetup", "backing file"])
+            volume_path = self._attached_directory.descendant([volume.host, volume.blockdevice_id])
+            device_path = device_for_path(volume_path)
+            if device_path is None:
+                check_output(["losetup", "--find", volume_path.path])
 
-            # # return "/dev/loopN"
-            # # return self._attached_directory.descendant([
-            # #     volume.host, blockdevice_id
-            # # ])
+            return device_for_path(volume_path)
+
         raise UnattachedVolume(blockdevice_id)
 
     def create_volume(self, size):

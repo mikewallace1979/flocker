@@ -335,13 +335,33 @@ class IBlockDeviceAPITestsMixin(object):
         ``get_device_path`` returns a ``FilePath`` to the device representing
         the attached volume.
         """
-        new_volume = self.api.create_volume(size=1000)
+        new_volume = self.api.create_volume(size=1024 * 50)
         attached_volume = self.api.attach_volume(
             new_volume.blockdevice_id,
             b'192.0.2.123'
         )
         device_path = self.api.get_device_path(attached_volume.blockdevice_id)
-        self.assertTrue(device_path.isBlockDevice())
+        self.assertTrue(
+            device_path.isBlockDevice(),
+            u"Not a block device. Path: {!r}".format(device_path)
+        )
+
+
+    def test_get_device_path_device_exists(self):
+        """
+        ``get_device_path`` returns the same ``FilePath`` for the volume device
+        when called multiple times.
+        """
+        new_volume = self.api.create_volume(size=1024 * 50)
+        attached_volume = self.api.attach_volume(
+            new_volume.blockdevice_id,
+            b'192.0.2.123'
+        )
+
+        device_path1 = self.api.get_device_path(attached_volume.blockdevice_id)
+        device_path2 = self.api.get_device_path(attached_volume.blockdevice_id)
+
+        self.assertEqual(device_path1, device_path2)
 
 
 def make_iblockdeviceapi_tests(blockdevice_api_factory):
