@@ -274,7 +274,7 @@ def flocker_zfs_agent_main():
     ).main()
 
 
-
+@flocker_standard_options
 class DatasetAgentOptions(Options):
     """
     Command line options for ``flocker-dataset-agent``.
@@ -326,6 +326,6 @@ class DatasetAgentScript(object):
 
 def flocker_dataset_agent_main():
     return FlockerScriptRunner(
-        script=DatasetAgentScript(),
+        script=DatasetAgentScript(deployer_factory=None),
         options=DatasetAgentOptions()
     ).main()
