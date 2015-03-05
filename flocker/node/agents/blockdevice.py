@@ -111,16 +111,18 @@ class LoopbackBlockDeviceAPI(object):
 
     def get_device_path(self, blockdevice_id):
         volume = self._get(blockdevice_id)
-        if volume.host is not None:
-            # either:
-            return check_output(["losetup", "-n", "-O", "name", "-j", "backing file"])
-            # or:
-            return check_output(["losetup", "backing file"])
 
-            # return "/dev/loopN"
-            # return self._attached_directory.descendant([
-            #     volume.host, blockdevice_id
-            # ])
+        if volume.host is not None:
+            # # either:
+            # return check_output(["losetup", "-n", "-O", "name", "-j", "backing file"])
+            # # or:
+            # return check_output(["losetup", "backing file"])
+
+            # # return "/dev/loopN"
+            # # return self._attached_directory.descendant([
+            # #     volume.host, blockdevice_id
+            # # ])
+            return
         raise UnattachedVolume()
 
     def create_volume(self, size):
@@ -141,16 +143,13 @@ class LoopbackBlockDeviceAPI(object):
         for volume in self.list_volumes():
             if volume.blockdevice_id == blockdevice_id:
                 return volume
-        return None
+        raise UnknownVolume()
 
     def attach_volume(self, blockdevice_id, host):
         """
         * move file into per-host (eg named after node ip) directory
         """
         volume = self._get(blockdevice_id)
-        if volume is None:
-            raise UnknownVolume()
-
         if volume.host is None:
             old_path = self._unattached_directory.child(blockdevice_id)
             host_directory = self._attached_directory.child(host)
