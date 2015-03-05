@@ -340,11 +340,8 @@ class IBlockDeviceAPITestsMixin(object):
             new_volume.blockdevice_id,
             b'192.0.2.123'
         )
-        self.assertEqual(
-            FilePath(b'/foo/bar'),
-            self.api.get_device_path(attached_volume.blockdevice_id)
-        )
-
+        device_path = self.api.get_device_path(attached_volume.blockdevice_id)
+        self.assertTrue(device_path.isBlockDevice())
 
 
 def make_iblockdeviceapi_tests(blockdevice_api_factory):
