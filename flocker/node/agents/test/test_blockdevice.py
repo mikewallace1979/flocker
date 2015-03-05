@@ -385,6 +385,9 @@ class CreateBlockDeviceDatasetTests(SynchronousTestCase):
     Tests for ``CreateBlockDeviceDataset``.
     """
     def test_interface(self):
+        """
+        ``CreateBlockDeviceDataset`` provides ``IStateChange``.
+        """
         self.assertTrue(
             verifyObject(
                 IStateChange,
@@ -397,9 +400,9 @@ class CreateBlockDeviceDatasetTests(SynchronousTestCase):
 
     def test_run(self):
         """
-        ``CreateBlockDeviceDataset.run`` uses the ``IDeployer``\ 's API object to
-        create a new volume, attach it to the deployer's node, initialize the
-        resulting block device with a filesystem, and mount the filesystem.
+        ``CreateBlockDeviceDataset.run`` uses the ``IDeployer``\ 's API object
+        to create a new volume, attach it to the deployer's node, initialize
+        the resulting block device with a filesystem, and mount the filesystem.
         """
         host = b"192.0.2.1"
         api = LoopbackBlockDeviceAPI.from_path(self.mktemp())
@@ -429,7 +432,11 @@ class CreateBlockDeviceDatasetTests(SynchronousTestCase):
 
 
 def get_mounts():
+    """
+    :returns: A generator 3-tuple(device_path, mountpoint, filesystem_type) for
+        each currently mounted filesystem reported in ``/proc/self/mounts``.
+    """
     with open("/proc/self/mounts") as mounts:
         for mount in mounts:
-            device, point, fstype = mount.split()[:3]
-            yield device, point, fstype
+            device_path, mountpoint, filesystem_type = mount.split()[:3]
+            yield device_path, mountpoint, filesystem_type
