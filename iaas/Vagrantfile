@@ -23,17 +23,17 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   config.vm.define "node1" do |node1|
-    node1.vm.network :private_network, :ip => "172.16.255.220"
+    node1.vm.network :private_network, :ip => "172.16.255.250"
     node1.vm.hostname = "node1"
     node1.vm.provision "file", source: FLOCKER_PYTHON, destination: FLOCKER_PYTHON
     node1.vm.provision "file", source: FLOCKER_NODE, destination: FLOCKER_NODE
     node1.vm.provision "shell",
       inline: "rpm -e clusterhq-flocker-node clusterhq-python-flocker; rpm -i #{FLOCKER_PYTHON} #{FLOCKER_NODE}"
-    node1.vm.provision "shell",
-      inline: "kill $(cat control.pid); flocker-control --port 80 > control.log & echo $! > control.pid"
-    node1.vm.provision "shell",
-      inline: "kill $(cat agent1.pid); flocker-iaas-memory-agent --host 172.16.255.220 --destination-host=172.16.255.220 --destination-port=4524 > agent1.log & echo $! > agent1.pid"
-    node1.vm.provision "shell",
-      inline: "kill $(cat agent2.pid); flocker-iaas-memory-agent --host 172.16.255.221 --destination-host=172.16.255.220 --destination-port=4524 > agent2.log & echo $! > agent2.pid"
+    # node1.vm.provision "shell",
+    #   inline: "kill $(cat control.pid); flocker-control --port 80 > control.log & echo $! > control.pid"
+    # node1.vm.provision "shell",
+    #   inline: "kill $(cat agent1.pid); flocker-iaas-memory-agent --host 172.16.255.220 --destination-host=172.16.255.220 --destination-port=4524 > agent1.log & echo $! > agent1.pid"
+    # node1.vm.provision "shell",
+    #   inline: "kill $(cat agent2.pid); flocker-iaas-memory-agent --host 172.16.255.221 --destination-host=172.16.255.220 --destination-port=4524 > agent2.log & echo $! > agent2.pid"
   end
 end
