@@ -149,6 +149,11 @@ class Cluster(object):
 
             def got_body(body):
                 expected_dataset = dataset_properties.copy()
+                # (Pdb++) dataset
+                # {u'deleted': False, u'dataset_id': u'db41bc86-2d16-4866-ba99-af8eba434755', u'metadata': {u'name': u'my_volume'}, u'maximum_size': 67108864, u'primary': u'172.16.255.250'}
+                del expected_dataset['metadata']
+                del expected_dataset['deleted']
+                import pdb; pdb.set_trace()
                 for dataset in body:
                     dataset.pop("path")
                 return expected_dataset in body
@@ -333,7 +338,7 @@ class DatasetAPITestsMixin(object):
             requested_dataset = {
                 u"primary": cluster.nodes[0].address,
                 u"dataset_id": unicode(uuid4()),
-                u"maximum_size": 1024 * 10,
+                u"maximum_size": 67108864,
                 u"metadata": {u"name": u"my_volume"}
             }
 
@@ -343,9 +348,9 @@ class DatasetAPITestsMixin(object):
         )
 
         # Wait for the dataset to be created
-        waiting_for_create = configuring_dataset.addCallback(
-            lambda (cluster, dataset): cluster.wait_for_dataset(dataset)
-        )
+        def wait_for_dataset((cluster, dataset)):
+            return cluster.wait_for_dataset(dataset)
+        waiting_for_create = configuring_dataset.addCallback(wait_for_dataset)
 
         return waiting_for_create
 
