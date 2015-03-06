@@ -148,11 +148,7 @@ class Cluster(object):
             request = self.datasets_state()
 
             def got_body(body):
-                # State listing doesn't have metadata or deleted, but does
-                # have unpredictable path.
                 expected_dataset = dataset_properties.copy()
-                del expected_dataset[u"metadata"]
-                del expected_dataset[u"deleted"]
                 for dataset in body:
                     dataset.pop("path")
                 return expected_dataset in body
