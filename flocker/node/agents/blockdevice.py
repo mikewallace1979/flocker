@@ -16,7 +16,7 @@ from pyrsistent import PRecord, field
 from twisted.internet.defer import succeed
 from twisted.python.filepath import FilePath
 
-from .. import IDeployer, IStateChange, Sequentially, InParallel
+from .. import IDeployer, IStateChange, InParallel
 from ...control import Node, NodeState, Manifestation, Dataset
 
 class VolumeException(Exception):
