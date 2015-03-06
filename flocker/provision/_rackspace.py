@@ -7,7 +7,7 @@ Rackspace provisioner.
 from ._libcloud import monkeypatch, LibcloudProvisioner
 from ._install import (
     provision, run,
-    task_disable_firewall,
+    task_disable_firewall, task_open_control_firewall,
     task_upgrade_kernel_centos,
 )
 
@@ -25,12 +25,13 @@ def provision_rackspace(node, package_source, distribution, variants):
         node.reboot()
 
     commands = (
-        task_disable_firewall()
-        + provision(
+        provision(
             package_source=package_source,
             distribution=node.distribution,
             variants=variants,
         )
+        + task_disable_firewall()
+        + task_open_control_firewall()
     )
     run(
         username='root',
@@ -78,7 +79,7 @@ def rackspace_provisioner(username, key, region, keyname):
             "ex_config_drive": "true",
         },
         provision=provision_rackspace,
-        default_size="performance1-2",
+        default_size="performance1-8",
     )
 
     return provisioner
