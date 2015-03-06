@@ -13,8 +13,11 @@ from characteristic import attributes
 
 from ._common import PackageSource, Variants
 
-ZFS_REPO = ("https://s3.amazonaws.com/archive.zfsonlinux.org/"
-            "fedora/zfs-release$(rpm -E %dist).noarch.rpm")
+ZFS_REPO = {
+    'fedora-20': "https://s3.amazonaws.com/archive.zfsonlinux.org/"
+                 "fedora/zfs-release$(rpm -E %dist).noarch.rpm",
+    'centos-7': "http://archive.zfsonlinux.org/epel/zfs-release.el7.noarch.rpm"
+}
 CLUSTERHQ_REPO = ("https://storage.googleapis.com/archive.clusterhq.com/"
                   "fedora/clusterhq-release$(rpm -E %dist).noarch.rpm")
 
@@ -114,6 +117,17 @@ def task_upgrade_kernel():
     ]
 
 
+def task_upgrade_kernel_centos():
+    return [
+        Run.from_args([
+            "yum", "install", "-y", "kernel-devel", "kernel"]),
+        # For dkms and ... ?
+        Run.from_args([
+            "yum", "install", "-y", "epel-release"]),
+        Run.from_args(['sync'])
+    ]
+
+
 def task_install_kernel_devel():
     """
     Install development headers corresponding to running kernel.
@@ -173,9 +187,11 @@ def task_install_flocker(package_source=PackageSource(),
         package.
     """
     commands = [
-        Run(command="yum install -y " + ZFS_REPO),
-        Run(command="yum install -y " + CLUSTERHQ_REPO)
+        Run(command="yum install -y " + ZFS_REPO[distribution]),
     ]
+    if distribution == 'fedora-20':
+        # Not for centos yet
+        commands += [Run(command="yum install -y " + CLUSTERHQ_REPO)]
 
     if package_source.branch:
         result_path = posixpath.join(
@@ -311,7 +327,8 @@ def provision(distribution, package_source, variants):
         commands += task_enable_docker_head_repository(distribution)
     if Variants.ZFS_TESTING in variants:
         commands += task_enable_zfs_testing(distribution)
-    commands += task_install_kernel_devel()
+    if distribution in ('fedora-20',):
+        commands += task_install_kernel_devel()
     commands += task_install_flocker(package_source=package_source,
                                      distribution=distribution)
     commands += task_enable_docker()
