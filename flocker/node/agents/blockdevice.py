@@ -131,10 +131,20 @@ class LoopbackBlockDeviceAPI(object):
         """
         self._unattached_directory = self.root_path.child(
             self._unattached_directory_name)
-        self._unattached_directory.makedirs()
+
+        try:
+            self._unattached_directory.makedirs()
+        except OSError:
+            pass
+
         self._attached_directory = self.root_path.child(
             self._attached_directory_name)
-        self._attached_directory.makedirs()
+
+        try:
+            self._attached_directory.makedirs()
+        except OSError:
+            pass
+
 
     def get_device_path(self, blockdevice_id):
         volume = self._get(blockdevice_id)

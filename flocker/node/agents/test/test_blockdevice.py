@@ -392,46 +392,12 @@ class LoopbackBlockDeviceAPIImplementationTests(SynchronousTestCase):
     """
     Implementation specific tests for ``LoopbackBlockDeviceAPI``.
     """
-    def test_initialise_directories(self):
+    def assertDirectoryStructure(self, directory):
         """
-        ``from_path`` creates a directory structure if it doesn't already
-        exist.
         """
-        directory = FilePath(self.mktemp())
         attached_directory = directory.child(
             LoopbackBlockDeviceAPI._attached_directory_name
         )
-        unattached_directory = directory.child(
-            LoopbackBlockDeviceAPI._unattached_directory_name
-        )
-
-        exists_before = (
-            attached_directory.exists(),
-            unattached_directory.exists()
-        )
-
-        LoopbackBlockDeviceAPI.from_path(directory.path)
-
-        exists_after = (
-            attached_directory.exists(),
-            unattached_directory.exists()
-        )
-
-        self.assertTrue(
-            ((False, False), (True, True))
-            (exists_before, exists_after)
-        )
-
-    def test_initialise_directories_existing(self):
-        """
-        ``from_path`` uses existing directories if present and creates missing
-        directories.
-        """
-        directory = FilePath(self.mktemp())
-        attached_directory = directory.child(
-            LoopbackBlockDeviceAPI._attached_directory_name
-        )
-        attached_directory.makedirs()
         unattached_directory = directory.child(
             LoopbackBlockDeviceAPI._unattached_directory_name
         )
@@ -442,6 +408,36 @@ class LoopbackBlockDeviceAPIImplementationTests(SynchronousTestCase):
             (True, True),
             (attached_directory.exists(), unattached_directory.exists())
         )
+
+    def test_initialise_directories(self):
+        """
+        ``from_path`` creates a directory structure if it doesn't already
+        exist.
+        """
+        directory = FilePath(self.mktemp()).child('loopback')
+        self.assertDirectoryStructure(directory)
+
+    def test_initialise_directories_attached_exists(self):
+        """
+        ``from_path`` uses existing attached directory if present.
+        """
+        directory = FilePath(self.mktemp())
+        attached_directory = directory.child(
+            LoopbackBlockDeviceAPI._attached_directory_name
+        )
+        attached_directory.makedirs()
+        self.assertDirectoryStructure(directory)
+
+    def test_initialise_directories_unattached_exists(self):
+        """
+        ``from_path`` uses existing unattached directory if present.
+        """
+        directory = FilePath(self.mktemp())
+        unattached_directory = directory.child(
+            LoopbackBlockDeviceAPI._unattached_directory_name
+        )
+        unattached_directory.makedirs()
+        self.assertDirectoryStructure(directory)
 
     def test_list_unattached_volumes(self):
         """
