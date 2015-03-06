@@ -337,6 +337,7 @@ class DatasetAPITestsMixin(object):
             requested_dataset = {
                 u"primary": cluster.nodes[0].address,
                 u"dataset_id": unicode(uuid4()),
+                u"maximum_size": 1024 * 10,
                 u"metadata": {u"name": u"my_volume"}
             }
 
