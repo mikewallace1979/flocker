@@ -11,7 +11,7 @@ from ..blockdevice import (
     CreateBlockDeviceDataset, UnattachedVolume
 )
 
-from ... import InParallel, Sequentially, IDeployer, IStateChange
+from ... import InParallel, IDeployer, IStateChange
 from ....control import Dataset, Manifestation, Node, NodeState, Deployment
 
 from twisted.python.filepath import FilePath
@@ -191,8 +191,6 @@ class BlockDeviceDeployerCalculateNecessaryStateChangesTests(SynchronousTestCase
                 ]),
             changes
         )
-
-
 
 
 class IBlockDeviceAPITestsMixin(object):
@@ -394,6 +392,57 @@ class LoopbackBlockDeviceAPIImplementationTests(SynchronousTestCase):
     """
     Implementation specific tests for ``LoopbackBlockDeviceAPI``.
     """
+    def test_initialise_directories(self):
+        """
+        ``from_path`` creates a directory structure if it doesn't already
+        exist.
+        """
+        directory = FilePath(self.mktemp())
+        attached_directory = directory.child(
+            LoopbackBlockDeviceAPI._attached_directory_name
+        )
+        unattached_directory = directory.child(
+            LoopbackBlockDeviceAPI._unattached_directory_name
+        )
+
+        exists_before = (
+            attached_directory.exists(),
+            unattached_directory.exists()
+        )
+
+        LoopbackBlockDeviceAPI.from_path(directory.path)
+
+        exists_after = (
+            attached_directory.exists(),
+            unattached_directory.exists()
+        )
+
+        self.assertTrue(
+            ((False, False), (True, True))
+            (exists_before, exists_after)
+        )
+
+    def test_initialise_directories_existing(self):
+        """
+        ``from_path`` uses existing directories if present and creates missing
+        directories.
+        """
+        directory = FilePath(self.mktemp())
+        attached_directory = directory.child(
+            LoopbackBlockDeviceAPI._attached_directory_name
+        )
+        attached_directory.makedirs()
+        unattached_directory = directory.child(
+            LoopbackBlockDeviceAPI._unattached_directory_name
+        )
+
+        LoopbackBlockDeviceAPI.from_path(directory.path)
+
+        self.assertTrue(
+            (True, True),
+            (attached_directory.exists(), unattached_directory.exists())
+        )
+
     def test_list_unattached_volumes(self):
         """
         ``list_volumes`` returns a ``BlockVolume`` for each unattached volume

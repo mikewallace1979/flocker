@@ -115,6 +115,9 @@ def device_for_path(file_path):
 class LoopbackBlockDeviceAPI(object):
     """
     """
+    _attached_directory_name = 'attached'
+    _unattached_directory_name = 'unattached'
+
     @classmethod
     def from_path(cls, root_path):
         """
@@ -126,9 +129,11 @@ class LoopbackBlockDeviceAPI(object):
     def _initialise_directories(self):
         """
         """
-        self._unattached_directory = self.root_path.child('unattached')
+        self._unattached_directory = self.root_path.child(
+            self._unattached_directory_name)
         self._unattached_directory.makedirs()
-        self._attached_directory = self.root_path.child('attached')
+        self._attached_directory = self.root_path.child(
+            self._attached_directory_name)
         self._attached_directory.makedirs()
 
     def get_device_path(self, blockdevice_id):
